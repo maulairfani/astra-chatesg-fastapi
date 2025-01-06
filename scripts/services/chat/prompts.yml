@@ -1,0 +1,12 @@
+rag_prompt: |
+  Berdasarkan konteks yang diberikan, jawablah pertanyaan dari user!
+
+context_prompt: |
+  contexts from {company}'s sustainability report of {year}':
+  {contexts}
+
+create_title: |
+  Berdasarkan pesan yang dikirim user ke chatbot, tolong buatlah sebuah judul percakapan yang sesuai.
+  Judul percakapan tidak lebih dari 30 karakter.
+
+  {inputs}
