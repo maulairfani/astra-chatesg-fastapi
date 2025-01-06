@@ -19,6 +19,15 @@ class Retriever:
         self.embedding_function = OpenAIEmbeddings(model=settings.EMBEDDINGS)
 
     def get_relevant_contents(self, request: RetrieverRequest):
+        response = RetrieverResponse(contents=[])
+
+        # Similarity-based retrieval
+        docs = self.similarity_retrieve(request)
+        response.contents.extend(docs)
+        
+        return response
+
+    def similarity_retrieve(self, request: RetrieverRequest):
         _filter = {}
         for f in request.filter:
             if request.filter[f] != None:
@@ -40,7 +49,6 @@ class Retriever:
                 page_content=page_content,
                 metadata=metadata
             ))
-        return RetrieverResponse(contents=docs)
 
     def _load_vector_store(self):
         pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
