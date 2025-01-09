@@ -34,4 +34,4 @@ class RetrieverRequest(BaseModel):
     filter: dict
 
 class RetrieverResponse(BaseModel):
-    contents: List[Document]
+    contents: List[Document] = []

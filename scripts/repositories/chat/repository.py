@@ -2,8 +2,8 @@ from google.cloud import firestore
 import datetime
 import humps
 from typing import List
-from scripts.config import settings
 
+from scripts.config import settings
 from scripts.models import ChatDocument, SessionDocument
 
 class ChatRepository:
@@ -11,6 +11,7 @@ class ChatRepository:
         self.fsclient = fsclient
         self.session_path = "chatHistories/{src}/userRecords/{uid}/botSessions"
         self.chat_path = "chatHistories/{src}/userRecords/{uid}/botSessions/{bsid}/botChats"
+        self.sr_path = "sustainabilityReports/{cid}"
     
     def create_session_doc(self, item: SessionDocument):
         item.created_at = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -57,8 +58,8 @@ class ChatRepository:
         chat_path = self.chat_path.format(src=src, uid=uid, bsid=bsid)
 
         try:
-            doc_ref = self.fsclient.collection(chat_path)
-            docs = doc_ref.order_by('createdAt', direction=firestore.Query.DESCENDING).limit(settings.LIMIT_HISTORY).get()
+            col_ref = self.fsclient.collection(chat_path)
+            docs = col_ref.order_by('createdAt', direction=firestore.Query.DESCENDING).limit(settings.LIMIT_HISTORY).get()
             docs = [humps.decamelize(doc.to_dict()) for doc in docs]
             docs = [ChatDocument(**doc) for doc in docs]
             return docs
@@ -79,5 +80,47 @@ class ChatRepository:
         except Exception as e:
             raise ValueError(f"Failed to create chat document: {e}")
 
+    def get_cid_by_company(self, company_name: str, year: int):
+        sr_path = self.sr_path.replace("/{cid}", "")
 
+        try:
+            # Referensi ke koleksi
+            col_ref = self.fsclient.collection(sr_path)
+            
+            # Filter dokumen berdasarkan company_name dan year
+            query = col_ref.where("company", "==", company_name).where("year", "==", year)
+            docs = query.get()
+            
+            # Pastikan hanya satu dokumen yang dikembalikan
+            if len(docs) == 1:
+                doc_data = docs[0].to_dict()  # Convert dokumen ke dictionary
+                return doc_data.get("cid")  # Ambil nilai 'cid'
+            elif len(docs) > 1:
+                raise ValueError(f"Multiple documents found for company '{company_name}' and year '{year}'. Expected only one.")
+            else:
+                raise ValueError(f"No document found for company '{company_name}' and year '{year}'.")
+        
+        except Exception as e:
+            raise RuntimeError(f"An error occurred while fetching the CID: {e}")
+            
+
+
+
+    def get_page_ids_by_gri(self, cid: str, gri_codes: list[str]):
+        sr_path = self.sr_path.format(cid=cid)
+
+        try:
+            doc_ref = self.fsclient.document(sr_path)
+            doc_data = doc_ref.get().to_dict()
+            disclosed_gri = doc_data.get('disclosedGri')
+            
+            page_ids = []
+            for code in gri_codes:
+                page_ids.append({
+                    "code": code,
+                    "page_ids": disclosed_gri.get(code)
+                })
+            return page_ids
+        except Exception as e:
+            raise ValueError(f"Failed to get page ids: {e}")
     

@@ -10,3 +10,125 @@ create_title: |
   Judul percakapan tidak lebih dari 30 karakter.
 
   {inputs}
+
+indicator_cls_prompt: |
+  GRI 2-1: Organizational details
+  GRI 2-2: Entities included in the organization’s sustainability reporting
+  GRI 2-3: Reporting period, frequency and contact point
+  GRI 2-4: Restatements of information
+  GRI 2-5: External assurance
+  GRI 2-6: Activities, value chain, and other business relationships
+  GRI 2-7: Employees 
+  GRI 2-8: Workers who are not employees
+  GRI 2-9: Governance structure and composition
+  GRI 2-10: Nomination and selection of the highest governance body
+  GRI 2-11: Chair of the highest governance body
+  GRI 2-12: Role of the highest governance body in overseeing the management of impacts
+  GRI 2-13: Delegation of responsibility for managing impacts
+  GRI 2-14: Role of the highest governance body in sustainability reporting
+  GRI 2-15: Conflicts of interest
+  GRI 2-16: Communication of critical concerns
+  GRI 2-17: Collective knowledge of the highest governance body
+  GRI 2-18: Evaluation of the performance of the highest governance body
+  GRI 2-19: Remuneration policies
+  GRI 2-20: Process to determine remuneration
+  GRI 2-21: Annual total compensation ratio
+  GRI 2-22: Statement on sustainable development strategy
+  GRI 2-23: Policy commitments
+  GRI 2-24: Embedding policy commitments 
+  GRI 2-25: Processes to remediate negative impacts
+  GRI 2-26: Mechanisms for seeking advice and raising concerns
+  GRI 2-27: Compliance with laws and regulations
+  GRI 2-28: Membership associations
+  GRI 2-29: Approach to stakeholder engagement
+  GRI 2-30: Collective bargaining agreements
+  GRI 3-1: Process to determine material topics
+  GRI 3-2: List of material topics
+  GRI 3-3: Management of material topics 
+  GRI 201-1: Direct economic value generated and distributed
+  GRI 201-2: Financial implications and other risks and opportunities due to climate change
+  GRI 201-3: Defined benefit plan obligations and other retirement plans
+  GRI 201-4: Financial assistance received from government
+  GRI 202-1: Ratios of standard entry level wage by gender compared to local minimum wage
+  GRI 202-2: Proportion of senior management hired from the local community
+  GRI 203-1: Infrastructure investments and services supported
+  GRI 203-2: Significant indirect economic impacts
+  GRI 204-1: Proportion of spending on local suppliers
+  GRI 205-1: Operations assessed for risks related to corruption
+  GRI 205-2: Communication and training about anti-corruption policies and procedures
+  GRI 205-3: Confirmed incidents of corruption and actions taken
+  GRI 206-1: Legal actions for anti-competitive behavior, anti-trust, and monopoly practices
+  GRI 207-1: Approach to tax
+  GRI 207-2: Tax governance, control, and risk management
+  GRI 207-3: Stakeholder engagement and management of concerns related to tax
+  GRI 207-4: Country-by-country reporting
+  GRI 301-1: Materials used by weight or volume
+  GRI 301-2: Recycled input materials used
+  GRI 301-3: Reclaimed products and their packaging materials
+  GRI 302-1: Energy consumption within the organization
+  GRI 302-2: Energy consumption outside of the organization
+  GRI 302-3: Energy intensity
+  GRI 302-4: Reduction of energy consumption
+  GRI 302-5: Reduction in energy requirements of products and services
+  GRI 303-1: Interactions with water as a shared resource
+  GRI 303-2: Management of water discharge-related impacts
+  GRI 303-3: Water withdrawal
+  GRI 303-5: Water consumption
+  GRI 304-1: Operational sites owned, leased, managed in, or adjacent to, protected areas and areas of high biodiversity value outside protected areas
+  GRI 304-2: Significant impacts of activities, products, and services on biodiversity
+  GRI 304-3: Habitats protected or restored
+  GRI 304-4: IUCN Red List species and national conservation list species with habitats in areas affected by operations
+  GRI 305-1: Direct (Scope 1) GHG emissions
+  GRI 305-2: Energy indirect (Scope 2) GHG emissions
+  GRI 305-3: Other indirect (Scope 3) GHG emissions
+  GRI 305-4: GHG emissions intensity
+  GRI 305-5: Reduction of GHG emissions
+  GRI 305-6: Emissions of ozone-depleting substances (ODS)
+  GRI 305-7: Nitrogen oxides (NOX), sulfur oxides (SOX), and other significant air emissions
+  GRI 306-1: Waste generation and significant waste-related impacts
+  GRI 306-2: Management of significant waste related impacts
+  GRI 306-3: Waste generated
+  GRI 306-4: Waste diverted from disposal
+  GRI 306-5: Waste directed to disposal
+  GRI 308-1: New suppliers that were screened using environmental criteria
+  GRI 308-2: Negative environmental impacts in the supply chain and actions taken
+  GRI 401-1: New employee hires and employee turnover
+  GRI 401-2: Benefits provided to full-time employees that are not provided to temporary or part-time employees
+  GRI 401-3: Parental leave
+  GRI 402-1: Minimum notice periods regarding operational changes
+  GRI 403-1: Occupational health and safety management system
+  GRI 403-2: Hazard identification, risk assessment, and incident investigation
+  GRI 403-3: Occupational health services
+  GRI 403-4: Worker participation, consultation, and communication on occupational health and safety
+  GRI 403-5: Worker training on occupational health and safety
+  GRI 403-6: Promotion of worker health
+  GRI 403-7: Prevention and mitigation of occupational health and safety impacts directly linked by business relationships
+  GRI 403-8: Workers covered by an occupational health and safety management system
+  GRI 403-9: Work-related injuries
+  GRI 403-10: Work-related ill health
+  GRI 404-1: Average hours of training per year per employee
+  GRI 404-2: Programs for upgrading employee skills and transition assistance programs
+  GRI 404-3: Percentage of employees receiving regular performance and career development reviews
+  GRI 405-1: Diversity of governance bodies and employees
+  GRI 405-2: Ratio of basic salary and remuneration of women to men
+  GRI 406-1: Incidents of discrimination and corrective actions taken
+  GRI 407-1: Operations and suppliers in which the right to freedom of association and collective bargaining may be at risk
+  GRI 408-1: Operations and suppliers at significant risk for incidents of child labor
+  GRI 409-1: Operations and suppliers at significant risk for incidents of forced or compulsory labor
+  GRI 410-1: Security personnel trained in human rights policies or procedures
+  GRI 411-1: Incidents of violations involving rights of indigenous peoples
+  GRI 413-1: Operations with local community engagement, impact assessments, and development programs
+  GRI 413-2: Operations with significant actual and potential negative impacts on local communities
+  GRI 414-1: New suppliers that were screened using social criteria
+  GRI 414-2: Negative social impacts in the supply chain and actions taken
+  GRI 415-1: Political contributions
+  GRI 416-1: Assessment of the health and safety impacts of product and service categories
+  GRI 416-2: Incidents of non-compliance concerning the health and safety impacts of products and service
+  GRI 417-1: Requirements for product and service information and labeling
+  GRI 417-2: Incidents of non-compliance concerning product and service information and labeling
+  GRI 417-3: Incidents of non-compliance concerning marketing communications
+  GRI 418-1: Substantiated complaints concerning breaches of customer privacy and losses of customer data
+
+  question: {question}
+
+  Which of the GRI indicators above is most related to this question?

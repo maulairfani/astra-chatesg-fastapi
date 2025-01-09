@@ -21,11 +21,11 @@ from scripts.services.chat.retriever import Retriever
 from scripts.config import settings
 
 class ChatService:
-    def __init__(self, vector_store: str, fsclient: firestore.Client, uid: str):
+    def __init__(self, vector_store: str, fsclient: firestore.Client, uid: str, model: str):
         self.vector_store = vector_store
         self.prompts = self._load_prompts()
         self.repo = ChatRepository(fsclient=fsclient)
-        self.retriever = Retriever()
+        self.retriever = Retriever(model, fsclient)
         self.uid = uid
 
     async def create(self, request: ChatRequest):
@@ -67,7 +67,11 @@ class ChatService:
             else:
                 raise NotImplementedError("Input other than text is not implemented")
         
-        retriever_request = RetrieverRequest(query=user_messages_str, filter={"company": request.company, "year": request.year})
+        # Init Retriever
+        retriever_request = RetrieverRequest(
+            query=user_messages_str, 
+            filter={"company": request.company, "year": request.year}
+        )
         retriever_response = self.retriever.get_relevant_contents(retriever_request)
         context_messages = [
             SystemMessage(content=self.prompts['context_prompt'].format(contexts=retriever_response.contents, company=request.company, year=request.year))
@@ -88,7 +92,8 @@ class ChatService:
         response.sources = [
             SourceItem(
                 url="https://example.com",
-                pages=[int(doc.metadata['page']) for doc in retriever_response.contents],
+                # pages=[int(doc.metadata['page']) for doc in retriever_response.contents],
+                pages=[1,2,3],
                 snippet="this is snippet..."
             ).model_dump()
         ]
