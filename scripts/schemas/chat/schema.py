@@ -8,9 +8,10 @@ class MessageItem(BaseModel):
     role: Literal["system", "user", "assistant"]
 
 class SourceItem(BaseModel):
-    url: str
+    url: str | None = None
     pages: list[int] | None = None
-    snippet: str
+    snippet: str | None = None
+    related_indicators: list[str] | None = None
 
 class ChatRequest(BaseModel):
     src: str
@@ -35,3 +36,4 @@ class RetrieverRequest(BaseModel):
 
 class RetrieverResponse(BaseModel):
     contents: List[Document] = []
+    metadata: dict = {}

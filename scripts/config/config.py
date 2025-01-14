@@ -1,5 +1,5 @@
 class Settings:
-    TEMPERATURE=0
+    TEMPERATURE=0.1
     INDEX="single-sr-test"
     EMBEDDINGS="text-embedding-3-large"
     LIMIT_HISTORY=10

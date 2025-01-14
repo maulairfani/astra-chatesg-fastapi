@@ -3,6 +3,7 @@ from google.cloud import firestore
 import uuid
 import json
 from langchain_openai import ChatOpenAI
+from langchain_huggingface import HuggingFaceEndpoint
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 import time
 from pydantic import BaseModel, Field
@@ -34,9 +35,6 @@ class ChatService:
             bsid=request.bsid if request.bsid != None else uuid.uuid4().hex[:20],
             bcid=str(uuid.uuid4()),
         )
-        response.tools.append("Respon diterima")
-        yield json.dumps(response.model_dump()) + "\n"
-        time.sleep(2)
 
         # Load chat history
         chat_history = []
@@ -72,10 +70,13 @@ class ChatService:
             query=user_messages_str, 
             filter={"company": request.company, "year": request.year}
         )
+        response.tools.append("Mengambil informasi relevan dari laporan keberlanjutan")
+        yield json.dumps(response.model_dump()) + "\n"
         retriever_response = self.retriever.get_relevant_contents(retriever_request)
         context_messages = [
             SystemMessage(content=self.prompts['context_prompt'].format(contexts=retriever_response.contents, company=request.company, year=request.year))
         ]
+        print(retriever_response.metadata)
 
         # Start streaming response
         messages = [*chat_history, *system_messages, *context_messages, *user_messages]
@@ -84,17 +85,16 @@ class ChatService:
             if len(response.responses) == 0:
                 response.responses.append("")
             
-            response.responses[-1] += chunk.content  
+            response.responses[-1] += chunk
             
             yield json.dumps(response.model_dump()) + "\n"
 
         # Return sources
         response.sources = [
             SourceItem(
-                url="https://example.com",
-                # pages=[int(doc.metadata['page']) for doc in retriever_response.contents],
-                pages=[1,2,3],
-                snippet="this is snippet..."
+                url=retriever_response.metadata.get('url'),
+                pages=[int(doc.metadata['page']) for doc in retriever_response.contents],
+                related_indicators=retriever_response.metadata.get('indicators')
             ).model_dump()
         ]
         response.done = True
@@ -128,7 +128,17 @@ class ChatService:
         return chat_history
 
     def _init_chain(self, model: str):
-        chain = ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
+        huggingface_valid_model = ['climategpt-7b', 'Llama-3.1-8B-Instruct', 'Llama-3.2-11B-Vision']
+        openai_valid_model = ['gpt-4o-mini', 'gpt-4o']
+        if model in openai_valid_model:
+            chain = ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
+        elif model in huggingface_valid_model:
+            if model == 'climategpt-7b':
+                endpoint_url = 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud'
+            elif model == 'Llama-3.1-8B-Instruct':
+                # endpoint_url = 'https://ud5os6horbh2229p.us-east-1.aws.endpoints.huggingface.cloud'
+                endpoint_url = 'https://dcds09i4mh9vmwh7.us-east4.gcp.endpoints.huggingface.cloud'
+            chain = HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
         return chain
     
     def _create_or_update_session_doc(self, request: ChatRequest, response: ChatResponse, title: str | None = None):
@@ -183,7 +193,7 @@ class ChatService:
         class SessionTitle(BaseModel):
             title: str = Field(None, title="Judul sesi")
 
-        llm = ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
+        llm = ChatOpenAI(model='gpt-4o-mini', temperature=settings.TEMPERATURE)
         llm = llm.with_structured_output(SessionTitle)
 
         prompt = prompt.format(inputs=inputs)

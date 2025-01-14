@@ -3,6 +3,7 @@ from langchain_core.documents import Document
 from typing import List
 from pinecone import Pinecone
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_huggingface import HuggingFaceEndpoint
 import os
 import yaml
 import re
@@ -28,7 +29,7 @@ class Retriever:
         self.repo = ChatRepository(fsclient=fsclient)
         self.prompts = self._load_prompts()
         self.embedding_function = OpenAIEmbeddings(model=settings.EMBEDDINGS)
-        self.sllm = ChatOpenAI(model=model_name).with_structured_output(RelevantIndicators)
+        self.sllm = self._init_chain(model_name)
         self.valid_indicators = [
             '2-1', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7', '2-8', '2-9', '2-10',
             '2-11', '2-12', '2-13', '2-14', '2-15', '2-16', '2-17', '2-18', '2-19',
@@ -50,13 +51,21 @@ class Retriever:
         response = RetrieverResponse()
 
         # Similarity-based retrieval
-        docs = self.similarity_retrieve(request)
+        docs, metadata = self.similarity_retrieve(request)
         response.contents.extend(docs)
+        response.metadata.update(metadata)
 
         # Indicator classification-based retrieval
-        docs = self.indicator_cls_retrieve(request)
-        response.contents.extend(docs)
-        
+        docs, metadata = self.indicator_cls_retrieve(request)
+        # response.contents.extend(docs)
+        response.metadata.update(metadata)
+
+        # get metadata
+        company_data = self.repo.get_data_by_company_name(request.filter['company'], request.filter['year'])
+        response.metadata.update({
+            "url": company_data.get("url")
+        })
+
         return response
 
     def similarity_retrieve(self, request: RetrieverRequest):
@@ -82,7 +91,7 @@ class Retriever:
                 metadata=metadata
             ))
         
-        return contents
+        return contents, {}
 
     def indicator_cls_retrieve(self, request: RetrieverRequest):
         prompt = self.prompts['indicator_cls_prompt'].format(question=request.query)
@@ -91,18 +100,21 @@ class Retriever:
         try:
             raw_indicators = self.sllm.invoke(prompt)
             print(raw_indicators)
-
-            for key, value in raw_indicators.dict().items():
-                indi = self._get_indicator(value)
-                indicators.extend(indi)
+            indi = self._get_indicator(raw_indicators)
+            indicators.extend(indi)
+            indicators = indicators[:2]
         except Exception as e:
             print(f"Failed to classify indicator: {e}")
         
-        cid = self.repo.get_cid_by_company(request.filter['company'], request.filter['year'])
+        company_data = self.repo.get_data_by_company_name(request.filter['company'], request.filter['year'])
+        cid = company_data.get('cid')
         page_ids = self.repo.get_page_ids_by_gri(cid, indicators)
         contents = self._get_content_by_pids(page_ids)
 
-        return contents
+        # Prepare metadata
+        metadata = {'indicators': indicators}
+
+        return contents, metadata
 
     def _get_indicator(self, content: str) -> List[str]:
         pattern = r'\b\d{1,3}-\d{1,2}(?=\D|$)'
@@ -143,3 +155,17 @@ class Retriever:
         with open("scripts\services\chat\prompts.yml", "r") as file:
             data = yaml.safe_load(file)
         return data
+
+    def _init_chain(self, model: str):
+        huggingface_valid_model = ['climategpt-7b', 'Llama-3.1-8B-Instruct', 'Llama-3.2-11B-Vision']
+        openai_valid_model = ['gpt-4o-mini', 'gpt-4o']
+        if model in openai_valid_model:
+            chain = ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
+        elif model in huggingface_valid_model:
+            if model == 'climategpt-7b':
+                endpoint_url = 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud'
+            elif model == 'Llama-3.1-8B-Instruct':
+                # endpoint_url = 'https://ud5os6horbh2229p.us-east-1.aws.endpoints.huggingface.cloud'
+                endpoint_url = 'https://dcds09i4mh9vmwh7.us-east4.gcp.endpoints.huggingface.cloud'
+            chain = HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
+        return chain

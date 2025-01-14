@@ -6,6 +6,9 @@ from typing import List
 from scripts.config import settings
 from scripts.models import ChatDocument, SessionDocument
 
+import warnings
+warnings.filterwarnings("ignore")
+
 class ChatRepository:
     def __init__(self, fsclient: firestore.Client):
         self.fsclient = fsclient
@@ -80,7 +83,7 @@ class ChatRepository:
         except Exception as e:
             raise ValueError(f"Failed to create chat document: {e}")
 
-    def get_cid_by_company(self, company_name: str, year: int):
+    def get_data_by_company_name(self, company_name: str, year: int):
         sr_path = self.sr_path.replace("/{cid}", "")
 
         try:
@@ -94,7 +97,7 @@ class ChatRepository:
             # Pastikan hanya satu dokumen yang dikembalikan
             if len(docs) == 1:
                 doc_data = docs[0].to_dict()  # Convert dokumen ke dictionary
-                return doc_data.get("cid")  # Ambil nilai 'cid'
+                return doc_data  # Ambil nilai 'cid'
             elif len(docs) > 1:
                 raise ValueError(f"Multiple documents found for company '{company_name}' and year '{year}'. Expected only one.")
             else:
@@ -103,9 +106,6 @@ class ChatRepository:
         except Exception as e:
             raise RuntimeError(f"An error occurred while fetching the CID: {e}")
             
-
-
-
     def get_page_ids_by_gri(self, cid: str, gri_codes: list[str]):
         sr_path = self.sr_path.format(cid=cid)
 
@@ -123,4 +123,4 @@ class ChatRepository:
             return page_ids
         except Exception as e:
             raise ValueError(f"Failed to get page ids: {e}")
-    
+
