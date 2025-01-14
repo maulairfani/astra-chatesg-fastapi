@@ -36,58 +36,70 @@ class ChatService:
             bcid=str(uuid.uuid4()),
         )
 
+        # Initialize chain
+        chain = self._init_chain(request.model)
+
+        # Build prompt
+        # Load prompt template
+        prompt_template = self.prompts['rag_prompt']
+
         # Load chat history
-        chat_history = []
+        chat_history = ""
         if request.bsid != None:
             response.tools.append("Mengambil histori percakapan")
             yield json.dumps(response.model_dump()) + "\n"
             chat_history = self._load_chat_history(request.src, self.uid, request.bsid)
         
-        # Initialize chain
-        chain = self._init_chain(request.model)
-
-        # Build input
-        system_messages = [
-            SystemMessage(content=self.prompts['rag_prompt'])
-        ]
-
-        user_messages = []
-        user_messages_str = ""
+        # User message (question)
+        user_messages = ""
         for input in request.inputs:
             if input.type == "text":
                 if input.role == "user":
-                    user_messages.append(
-                        HumanMessage(content=input.content)
-                    )
-                    user_messages_str += input.content + "\n\n"
+                    user_messages += input.content + "\n\n"
                 else:
                     raise ValueError("Role other than user is denied")
             else:
                 raise NotImplementedError("Input other than text is not implemented")
-        
-        # Init Retriever
+            
+        # Retrieve Context
         retriever_request = RetrieverRequest(
-            query=user_messages_str, 
-            filter={"company": request.company, "year": request.year}
+            query=user_messages, 
+            filter={"company": request.company, "year": request.year},
+            mode=request.retriever
         )
         response.tools.append("Mengambil informasi relevan dari laporan keberlanjutan")
         yield json.dumps(response.model_dump()) + "\n"
         retriever_response = self.retriever.get_relevant_contents(retriever_request)
-        context_messages = [
-            SystemMessage(content=self.prompts['context_prompt'].format(contexts=retriever_response.contents, company=request.company, year=request.year))
-        ]
-        print(retriever_response.metadata)
+
+        # Contexts from retrieval
+        contexts = ""
+        for context in retriever_response.contents:
+            page_content = context.page_content
+            page = context.metadata.get('page')
+            company = context.metadata.get('company')
+            year = context.metadata.get('year')
+            contexts += f"Laporan Keberlanjutan {company} tahun {year}\nHalaman:{page}\nKonten:{page_content}\n\n"
+
+        # Format prompt template
+        message = prompt_template.format(
+            chat_history=chat_history,
+            contexts=contexts,
+            question=user_messages,
+            company=request.company,
+            year=request.year
+        )
 
         # Start streaming response
-        messages = [*chat_history, *system_messages, *context_messages, *user_messages]
         run_config = {"run_name": "Answer Generation", "run_id": response.bcid}
-        for chunk in chain.stream(messages, config=run_config):
+        try:
             if len(response.responses) == 0:
                 response.responses.append("")
-            
-            response.responses[-1] += chunk
-            
-            yield json.dumps(response.model_dump()) + "\n"
+            for chunk in chain.stream(message, config=run_config):
+                response.responses[-1] += chunk
+                yield json.dumps(response.model_dump()) + "\n"
+        except Exception as e:
+            if "max_new_tokens" in str(e):
+                response.responses[-1] += str(e)
 
         # Return sources
         response.sources = [
@@ -107,23 +119,18 @@ class ChatService:
         else:
             session_result = self._create_or_update_session_doc(request, response)
             
-
         # Save chat doc
         chat_result = self._create_chat_doc(request, response)
 
-    def _load_chat_history(self, src: str, uid: str, bsid: str):
+    def _load_chat_history(self, src: str, uid: str, bsid: str) -> str:
         docs = self.repo.get_chat_docs(src, uid, bsid)
 
-        chat_history = []
+        chat_history = ""
         for doc in docs:
             for input in doc.inputs:
-                chat_history.append(
-                    HumanMessage(content=input.content)
-                )
+                chat_history += f"User: {input.content} "
             for output in doc.outputs:
-                chat_history.append(
-                    AIMessage(content=output.content)
-                )
+                chat_history += f"ChatESG: {output.content}"
 
         return chat_history
 
@@ -137,7 +144,7 @@ class ChatService:
                 endpoint_url = 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud'
             elif model == 'Llama-3.1-8B-Instruct':
                 # endpoint_url = 'https://ud5os6horbh2229p.us-east-1.aws.endpoints.huggingface.cloud'
-                endpoint_url = 'https://dcds09i4mh9vmwh7.us-east4.gcp.endpoints.huggingface.cloud'
+                endpoint_url = 'https://sm3rd92c0n31cnxk.us-east4.gcp.endpoints.huggingface.cloud'
             chain = HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
         return chain
     

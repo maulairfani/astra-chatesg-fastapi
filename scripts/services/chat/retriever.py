@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from langchain_core.documents import Document
-from typing import List
+from typing import List, Literal
 from pinecone import Pinecone
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_huggingface import HuggingFaceEndpoint
@@ -51,14 +51,18 @@ class Retriever:
         response = RetrieverResponse()
 
         # Similarity-based retrieval
-        docs, metadata = self.similarity_retrieve(request)
-        response.contents.extend(docs)
-        response.metadata.update(metadata)
+        if request.mode == 'similarity' or request.mode == 'combination':
+            print(1)
+            docs, metadata = self.similarity_retrieve(request)
+            response.contents.extend(docs)
+            response.metadata.update(metadata)
 
         # Indicator classification-based retrieval
-        docs, metadata = self.indicator_cls_retrieve(request)
-        # response.contents.extend(docs)
-        response.metadata.update(metadata)
+        if request.mode == 'indicator-cls' or request.mode == 'combination':
+            print(2)
+            docs, metadata = self.indicator_cls_retrieve(request)
+            response.contents.extend(docs)
+            response.metadata.update(metadata)
 
         # get metadata
         company_data = self.repo.get_data_by_company_name(request.filter['company'], request.filter['year'])
@@ -166,6 +170,6 @@ class Retriever:
                 endpoint_url = 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud'
             elif model == 'Llama-3.1-8B-Instruct':
                 # endpoint_url = 'https://ud5os6horbh2229p.us-east-1.aws.endpoints.huggingface.cloud'
-                endpoint_url = 'https://dcds09i4mh9vmwh7.us-east4.gcp.endpoints.huggingface.cloud'
+                endpoint_url = 'https://sm3rd92c0n31cnxk.us-east4.gcp.endpoints.huggingface.cloud'
             chain = HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
         return chain

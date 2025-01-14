@@ -20,6 +20,8 @@ class ChatRequest(BaseModel):
     company: str = "PT Astra International Tbk"
     year: List[int] = 2022
     model: str
+    retriever: Literal['similarity', 'indicator-cls', 'combination'] = 'indicator-cls'
+    top_k: int | None = None
 
 class ChatResponse(BaseModel):
     done: bool = False
@@ -33,6 +35,8 @@ class ChatResponse(BaseModel):
 class RetrieverRequest(BaseModel):
     query: str
     filter: dict
+    mode: Literal['similarity', 'indicator-cls', 'combination'] = 'indicator-cls'
+    top_k: int | None = None
 
 class RetrieverResponse(BaseModel):
     contents: List[Document] = []
