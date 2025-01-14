@@ -65,7 +65,8 @@ class ChatService:
         retriever_request = RetrieverRequest(
             query=user_messages, 
             filter={"company": request.company, "year": request.year},
-            mode=request.retriever
+            mode=request.retriever,
+            top_k=request.top_k
         )
         response.tools.append("Mengambil informasi relevan dari laporan keberlanjutan")
         yield json.dumps(response.model_dump()) + "\n"

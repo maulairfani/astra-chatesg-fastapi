@@ -52,14 +52,12 @@ class Retriever:
 
         # Similarity-based retrieval
         if request.mode == 'similarity' or request.mode == 'combination':
-            print(1)
             docs, metadata = self.similarity_retrieve(request)
             response.contents.extend(docs)
             response.metadata.update(metadata)
 
         # Indicator classification-based retrieval
         if request.mode == 'indicator-cls' or request.mode == 'combination':
-            print(2)
             docs, metadata = self.indicator_cls_retrieve(request)
             response.contents.extend(docs)
             response.metadata.update(metadata)
@@ -82,7 +80,7 @@ class Retriever:
         raw_contents = self.vector_store.query(
             vector=vector,
             filter=_filter,
-            top_k=settings.TOP_K,
+            top_k=request.top_k if request.top_k != None else settings.TOP_K,
             include_metadata=True
         )
         
