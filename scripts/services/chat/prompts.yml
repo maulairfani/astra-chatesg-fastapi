@@ -7,7 +7,7 @@ rag_prompt: |
 
   Berikut ini adalah konteks yang diambil dari laporan keberlanjutan {company} tahun {year}
   {contexts}
-
+  
   Pertanyaan:
   {question}
 

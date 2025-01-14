@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from firebase_admin import auth
-from scripts.routers.v1 import chat
+from scripts.routers.v1 import chat, eval
 from fastapi import Request
 
 def verify_token(request: Request):
@@ -40,3 +40,4 @@ router = APIRouter(
 )
 
 router.include_router(chat.router)
+router.include_router(eval.router)

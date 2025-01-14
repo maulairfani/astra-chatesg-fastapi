@@ -4,7 +4,7 @@ import uuid
 import json
 from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEndpoint
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, AIMessageChunk
+from langchain_core.messages import AIMessageChunk
 import time
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
@@ -17,33 +17,22 @@ from scripts.schemas import (
     ChatResponse, 
     SourceItem,
     RetrieverRequest,
-    RetrieverResponse
 )
 from scripts.models import SessionDocument, ChatDocument
 from scripts.services.chat.retriever import Retriever
 from scripts.config import settings
+from scripts.utils import init_chain
 
 class ChatService:
     # Cache prompts sebagai variabel kelas
     _prompts_cache: Optional[Dict] = None
 
-    # Model to endpoint mapping for HuggingFace models
-    _huggingface_models = {
-        'climategpt-7b': 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud',
-        'gemma-2-27b-it': 'https://sm3rd92c0n31cnxk.us-east4.gcp.endpoints.huggingface.cloud',
-        # Add other HuggingFace models and their endpoints here
-    }
-
-    _openai_valid_models = {'gpt-4o-mini', 'gpt-4o'}
-    _huggingface_valid_models = {'climategpt-7b', 'Llama-3.1-8B-Instruct', 'gemma-2-27b-it'}
-
-    def __init__(self, vector_store: str, fsclient: firestore.Client, uid: str, model: str):
-        self.vector_store = vector_store
+    def __init__(self, fsclient: firestore.Client, uid: str, model: str):
         self.prompts = self._load_prompts()
         self.repo = ChatRepository(fsclient=fsclient)
-        self.retriever = Retriever(model, fsclient)
         self.uid = uid
-        self.chain = self._init_chain(model)
+        self.chain = init_chain(model)
+        self.retriever = Retriever(fsclient)
 
     @classmethod
     def _load_prompts(cls) -> dict:
@@ -53,25 +42,12 @@ class ChatService:
                 cls._prompts_cache = yaml.safe_load(file)
         return cls._prompts_cache
 
-    def _init_chain(self, model: str):
-        if model in self._openai_valid_models:
-            return ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
-        elif model in self._huggingface_valid_models:
-            endpoint_url = self._huggingface_models.get(model)
-            if not endpoint_url:
-                raise ValueError(f"No endpoint URL configured for model {model}")
-            return HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
-        else:
-            raise ValueError(f"Unsupported model: {model}")
-
     def create(self, request: ChatRequest):
         # Initialize response
         response = ChatResponse(
             bsid=request.bsid or uuid.uuid4().hex[:20],
             bcid=str(uuid.uuid4()),
         )
-
-        # Initialize chain (already done in __init__)
 
         # Load prompt template
         prompt_template = self.prompts.get('rag_prompt')
@@ -93,7 +69,8 @@ class ChatService:
             query=user_messages,
             filter={"company": request.company, "year": request.year},
             mode=request.retriever,
-            top_k=request.top_k
+            top_k=request.top_k,
+            model=request.model,
         )
         response.tools.append("Mengambil informasi relevan dari laporan keberlanjutan")
         yield json.dumps(response.model_dump()) + "\n"
@@ -163,8 +140,8 @@ class ChatService:
 
         # Save session and chat documents
         title = None
-        if not request.bsid:
-            title = self._create_title(request.inputs, request.model)
+        # if not request.bsid:
+        #     title = self._create_title(request.inputs)
         
         self._create_or_update_session_doc(request, response, title)
         self._create_chat_doc(request, response)
@@ -238,7 +215,7 @@ class ChatService:
         )
         self.repo.create_chat_doc(chat_doc)
 
-    def _create_title(self, inputs: List, model: str) -> Optional[str]:
+    def _create_title(self, inputs: List) -> Optional[str]:
         prompt_template = self.prompts.get('create_title')
         if not prompt_template:
             raise ValueError("Prompt template 'create_title' not found.")

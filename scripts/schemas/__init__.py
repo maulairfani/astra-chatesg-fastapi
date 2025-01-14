@@ -5,3 +5,5 @@ from scripts.schemas.chat.schema import (
     RetrieverRequest,
     RetrieverResponse
 )
+
+from scripts.schemas.eval.schema import *

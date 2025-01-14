@@ -15,6 +15,7 @@ from scripts.schemas import (
 )
 from scripts.repositories import ChatRepository
 from scripts.config import settings
+from scripts.utils import init_chain
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,12 +24,11 @@ class RelevantIndicators(BaseModel):
     indicator: str = Field(description="Most relevant indicator towards the question")
 
 class Retriever:
-    def __init__(self, model_name: str, fsclient: firestore.Client):
+    def __init__(self, fsclient: firestore.Client):
         self.vector_store = self._load_vector_store()
         self.repo = ChatRepository(fsclient=fsclient)
         self.prompts = self._load_prompts()
         self.embedding_function = OpenAIEmbeddings(model=settings.EMBEDDINGS)
-        self.llm = self._init_chain(model_name)
         self.valid_indicators = [
             '2-1', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7', '2-8', '2-9', '2-10',
             '2-11', '2-12', '2-13', '2-14', '2-15', '2-16', '2-17', '2-18', '2-19',
@@ -46,7 +46,7 @@ class Retriever:
             '415-1', '416-1', '416-2', '417-1', '417-2', '417-3', '418-1'
         ]
 
-    def get_relevant_contents(self, request: RetrieverRequest):
+    async def get_relevant_contents(self, request: RetrieverRequest):
         response = RetrieverResponse()
 
         # Similarity-based retrieval
@@ -95,14 +95,15 @@ class Retriever:
         return contents, {}
 
     def indicator_cls_retrieve(self, request: RetrieverRequest):
+        llm = init_chain(request.model)
         prompt = self.prompts['indicator_cls_prompt'].format(question=request.query)
         
         indicators = []
         # Structurize LLM
         try:
-            sllm = self.llm.with_structured_output(RelevantIndicators)
+            sllm = llm.with_structured_output(RelevantIndicators)
         except:
-            sllm = self.llm
+            sllm = llm
 
         try:
             raw_indicators = sllm.invoke(prompt)
@@ -124,7 +125,7 @@ class Retriever:
         contents = self._get_content_by_pids(page_ids)
 
         # Prepare metadata
-        metadata = {'indicators': indicators}
+        metadata = {'indicators': indicators, 'raw_indicators': raw_indicators}
 
         return contents, metadata
 
@@ -138,6 +139,9 @@ class Retriever:
     def _get_content_by_pids(self, page_ids: list[dict]):
         contents = []
         for data in page_ids:
+            if data['page_ids'] == None:
+                continue
+
             vectors = self.vector_store.fetch(data['page_ids']).to_dict()['vectors']
             
             for pid in list(vectors.keys()):
@@ -167,16 +171,5 @@ class Retriever:
         with open("scripts\services\chat\prompts.yml", "r") as file:
             data = yaml.safe_load(file)
         return data
-
-    def _init_chain(self, model: str):
-        huggingface_valid_model = ['climategpt-7b', 'Llama-3.1-8B-Instruct', 'gemma-2-27b-it']
-        openai_valid_model = ['gpt-4o-mini', 'gpt-4o']
-        if model in openai_valid_model:
-            chain = ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
-        elif model in huggingface_valid_model:
-            if model == 'climategpt-7b':
-                endpoint_url = 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud'
-            elif model == 'gemma-2-27b-it':
-                endpoint_url = 'https://sm3rd92c0n31cnxk.us-east4.gcp.endpoints.huggingface.cloud'
-            chain = HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
-        return chain
+    
+    

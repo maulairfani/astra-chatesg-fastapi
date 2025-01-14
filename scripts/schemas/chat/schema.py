@@ -37,6 +37,7 @@ class RetrieverRequest(BaseModel):
     filter: dict
     mode: Literal['similarity', 'indicator-cls', 'combination'] = 'indicator-cls'
     top_k: int | None = None
+    model: str | None = None
 
 class RetrieverResponse(BaseModel):
     contents: List[Document] = []
