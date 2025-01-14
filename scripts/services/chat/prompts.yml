@@ -140,4 +140,4 @@ indicator_cls_prompt: |
 
   question: {question}
 
-  Which of the GRI indicators above is most related to this question?
+  Based on the question, return the **single most relevant GRI indicator** from the list above. Provide only the indicator code (e.g., "GRI 417-1") as the answer, without any additional explanation or context.

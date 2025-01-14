@@ -20,8 +20,7 @@ load_dotenv()
 
 from pydantic import BaseModel, Field
 class RelevantIndicators(BaseModel):
-    first_indicator: str = Field(description="Most relevant indicator towards the question")
-    second_indicator: str = Field(description="Second most relevant indicator towards the question")
+    indicator: str = Field(description="Most relevant indicator towards the question")
 
 class Retriever:
     def __init__(self, model_name: str, fsclient: firestore.Client):
@@ -29,7 +28,7 @@ class Retriever:
         self.repo = ChatRepository(fsclient=fsclient)
         self.prompts = self._load_prompts()
         self.embedding_function = OpenAIEmbeddings(model=settings.EMBEDDINGS)
-        self.sllm = self._init_chain(model_name)
+        self.llm = self._init_chain(model_name)
         self.valid_indicators = [
             '2-1', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7', '2-8', '2-9', '2-10',
             '2-11', '2-12', '2-13', '2-14', '2-15', '2-16', '2-17', '2-18', '2-19',
@@ -99,12 +98,23 @@ class Retriever:
         prompt = self.prompts['indicator_cls_prompt'].format(question=request.query)
         
         indicators = []
+        # Structurize LLM
         try:
-            raw_indicators = self.sllm.invoke(prompt)
-            print(raw_indicators)
-            indi = self._get_indicator(raw_indicators)
-            indicators.extend(indi)
-            indicators = indicators[:2]
+            sllm = self.llm.with_structured_output(RelevantIndicators)
+        except:
+            sllm = self.llm
+
+        try:
+            raw_indicators = sllm.invoke(prompt)
+            if isinstance(raw_indicators, RelevantIndicators):
+                for key, value in raw_indicators.model_dump().items():
+                    indi = self._get_indicator(value)
+                    indicators.extend(indi)
+            else:
+                indi = self._get_indicator(raw_indicators)
+                indicators.extend(indi)
+                indicators = indicators[:2]
+
         except Exception as e:
             print(f"Failed to classify indicator: {e}")
         
@@ -159,15 +169,14 @@ class Retriever:
         return data
 
     def _init_chain(self, model: str):
-        huggingface_valid_model = ['climategpt-7b', 'Llama-3.1-8B-Instruct', 'Llama-3.2-11B-Vision']
+        huggingface_valid_model = ['climategpt-7b', 'Llama-3.1-8B-Instruct', 'gemma-2-27b-it']
         openai_valid_model = ['gpt-4o-mini', 'gpt-4o']
         if model in openai_valid_model:
             chain = ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
         elif model in huggingface_valid_model:
             if model == 'climategpt-7b':
                 endpoint_url = 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud'
-            elif model == 'Llama-3.1-8B-Instruct':
-                # endpoint_url = 'https://ud5os6horbh2229p.us-east-1.aws.endpoints.huggingface.cloud'
+            elif model == 'gemma-2-27b-it':
                 endpoint_url = 'https://sm3rd92c0n31cnxk.us-east4.gcp.endpoints.huggingface.cloud'
             chain = HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
         return chain

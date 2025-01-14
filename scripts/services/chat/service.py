@@ -4,7 +4,7 @@ import uuid
 import json
 from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEndpoint
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, AIMessageChunk
 import time
 from pydantic import BaseModel, Field
 import yaml
@@ -91,12 +91,17 @@ class ChatService:
         )
 
         # Start streaming response
-        run_config = {"run_name": "Answer Generation", "run_id": response.bcid}
+        run_config = {"run_name": "Answer Generation", "run_id": response.bcid, "metadata": {"configurable": {"session_id": response.bsid, "user_id": self.uid}}}    
         try:
             if len(response.responses) == 0:
                 response.responses.append("")
             for chunk in chain.stream(message, config=run_config):
-                response.responses[-1] += chunk
+                if isinstance(chunk, AIMessageChunk):
+                    response.responses[-1] += chunk.content
+                elif isinstance(chunk, str):
+                    response.responses[-1] += chunk
+                else:
+                    raise ValueError("Unexpected type of response")
                 yield json.dumps(response.model_dump()) + "\n"
         except Exception as e:
             if "max_new_tokens" in str(e):
@@ -136,15 +141,14 @@ class ChatService:
         return chat_history
 
     def _init_chain(self, model: str):
-        huggingface_valid_model = ['climategpt-7b', 'Llama-3.1-8B-Instruct', 'Llama-3.2-11B-Vision']
+        huggingface_valid_model = ['climategpt-7b', 'Llama-3.1-8B-Instruct', 'gemma-2-27b-it']
         openai_valid_model = ['gpt-4o-mini', 'gpt-4o']
         if model in openai_valid_model:
             chain = ChatOpenAI(model=model, temperature=settings.TEMPERATURE)
         elif model in huggingface_valid_model:
             if model == 'climategpt-7b':
                 endpoint_url = 'https://vnywjc8vg2jtwu0c.us-east4.gcp.endpoints.huggingface.cloud'
-            elif model == 'Llama-3.1-8B-Instruct':
-                # endpoint_url = 'https://ud5os6horbh2229p.us-east-1.aws.endpoints.huggingface.cloud'
+            elif model == 'gemma-2-27b-it':
                 endpoint_url = 'https://sm3rd92c0n31cnxk.us-east4.gcp.endpoints.huggingface.cloud'
             chain = HuggingFaceEndpoint(endpoint_url=endpoint_url, temperature=settings.TEMPERATURE)
         return chain
