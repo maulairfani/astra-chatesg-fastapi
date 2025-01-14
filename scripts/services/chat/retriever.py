@@ -98,7 +98,6 @@ class Retriever:
         except Exception as e:
             print(f"Failed to classify indicator: {e}")
         
-        indicators = ['2-22'] # TEMPORARY
         cid = self.repo.get_cid_by_company(request.filter['company'], request.filter['year'])
         page_ids = self.repo.get_page_ids_by_gri(cid, indicators)
         contents = self._get_content_by_pids(page_ids)
