@@ -6,4 +6,7 @@ from scripts.schemas.chat.schema import (
     RetrieverResponse
 )
 
-from scripts.schemas.eval.schema import *
+from scripts.schemas.eval.schema import (
+    FCMetricRequest, FCMetricResponse,
+    RougeMetricRequest, RougeMetricResponse
+)

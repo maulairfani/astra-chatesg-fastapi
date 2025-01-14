@@ -2,9 +2,13 @@ import json
 
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._factual_correctness import FactualCorrectness
+from ragas.metrics import RougeScore
 from ragas.llms import LangchainLLMWrapper
 from scripts.utils import init_chain
-from scripts.schemas import FCMetricRequest, FCMetricResponse
+from scripts.schemas import (
+    FCMetricRequest, FCMetricResponse,
+    RougeMetricRequest, RougeMetricResponse
+)
 
 class FCMetric:
     def calculate(self, request: FCMetricRequest):
@@ -30,3 +34,14 @@ class FCMetric:
             reference_response=list(result['reference_response'])
         )
         return response
+
+class RougeMetric:
+    def calculate(self, request: RougeMetricRequest):
+        sample = SingleTurnSample(
+            response=request.response,
+            reference=request.reference
+        )
+        scorer = RougeScore(rouge_type=request.rouge_type, measure_type=request.measure_type)
+        return RougeMetricResponse(
+            score = scorer.single_turn_score(sample)
+        )
