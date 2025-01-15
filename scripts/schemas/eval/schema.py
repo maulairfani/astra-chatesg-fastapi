@@ -24,3 +24,10 @@ class RougeMetricRequest(BaseModel):
 
 class RougeMetricResponse(BaseModel):
     score: float
+
+class RetrievalMetricRequest(BaseModel):
+    retrieved_contexts: List[int]
+    reference_contexts: List[int]
+
+class RetrievalMetricResponse(BaseModel):
+    score: float

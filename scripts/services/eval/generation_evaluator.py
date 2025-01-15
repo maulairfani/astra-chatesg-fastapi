@@ -1,5 +1,3 @@
-import json
-
 from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics._factual_correctness import FactualCorrectness
 from ragas.metrics import RougeScore

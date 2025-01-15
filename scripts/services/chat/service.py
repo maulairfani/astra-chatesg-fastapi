@@ -1,9 +1,7 @@
-from pinecone import Pinecone
 from google.cloud import firestore
 import uuid
 import json
 from langchain_openai import ChatOpenAI
-from langchain_huggingface import HuggingFaceEndpoint
 from langchain_core.messages import AIMessageChunk
 import time
 from pydantic import BaseModel, Field

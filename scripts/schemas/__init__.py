@@ -8,5 +8,6 @@ from scripts.schemas.chat.schema import (
 
 from scripts.schemas.eval.schema import (
     FCMetricRequest, FCMetricResponse,
-    RougeMetricRequest, RougeMetricResponse
+    RougeMetricRequest, RougeMetricResponse,
+    RetrievalMetricRequest, RetrievalMetricResponse
 )

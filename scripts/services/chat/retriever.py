@@ -1,9 +1,8 @@
 from pydantic import BaseModel
 from langchain_core.documents import Document
-from typing import List, Literal
+from typing import List
 from pinecone import Pinecone
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_openai import OpenAIEmbeddings
 import os
 import yaml
 import re
