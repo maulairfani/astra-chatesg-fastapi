@@ -15,6 +15,7 @@ from scripts.schemas import (
     ChatResponse, 
     SourceItem,
     RetrieverRequest,
+    RetrieverResponse
 )
 from scripts.models import SessionDocument, ChatDocument
 from scripts.services.chat.retriever import Retriever
@@ -48,7 +49,7 @@ class ChatService:
         )
 
         # Load prompt template
-        prompt_template = self.prompts.get('rag_prompt')
+        prompt_template: str = self.prompts.get('rag_prompt')
         if not prompt_template:
             raise ValueError("Prompt template 'rag_prompt' not found.")
 
@@ -70,9 +71,11 @@ class ChatService:
             top_k=request.top_k,
             model=request.model,
         )
+        print(retriever_request)
         response.tools.append("Mengambil informasi relevan dari laporan keberlanjutan")
         yield json.dumps(response.model_dump()) + "\n"
         retriever_response = self.retriever.get_relevant_contents(retriever_request)
+        print(retriever_response)
 
         # Aggregate contexts
         contexts = self._aggregate_contexts(retriever_response.contents)

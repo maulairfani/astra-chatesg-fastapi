@@ -45,7 +45,7 @@ class Retriever:
             '415-1', '416-1', '416-2', '417-1', '417-2', '417-3', '418-1'
         ]
 
-    async def get_relevant_contents(self, request: RetrieverRequest):
+    def get_relevant_contents(self, request: RetrieverRequest):
         response = RetrieverResponse()
 
         # Similarity-based retrieval
