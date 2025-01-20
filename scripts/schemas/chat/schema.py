@@ -22,6 +22,7 @@ class ChatRequest(BaseModel):
     model: str
     retriever: Literal['similarity', 'indicator-cls', 'combination'] = 'indicator-cls'
     top_k: int | None = None
+    reference_contexts: str | None = None
 
 class ChatResponse(BaseModel):
     done: bool = False

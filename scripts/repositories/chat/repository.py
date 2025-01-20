@@ -18,6 +18,7 @@ class ChatRepository:
     
     def create_session_doc(self, item: SessionDocument):
         item.created_at = datetime.datetime.now(tz=datetime.timezone.utc)
+        item.updated_at = datetime.datetime.now(tz=datetime.timezone.utc)
 
         try:
             session_path = self.session_path.format(src=item.src, uid=item.uid)
@@ -124,3 +125,25 @@ class ChatRepository:
         except Exception as e:
             raise ValueError(f"Failed to get page ids: {e}")
 
+    def update_user_feedback(self, item: ChatDocument):
+        chat_path = self.chat_path.format(src=item.src, uid=item.uid, bsid=item.bsid)
+
+        try:
+            _update = {}
+            if item.thumbs_up == True:
+                _update['thumbs_up'] = True
+            elif item.thumbs_up == False:
+                _update['thumbs_up'] = False
+                _update['report'] = item.report
+            elif item.thumbs_up == None:
+                _update['thumbs_up'] = None
+                _update['report'] = None
+            else:
+                raise ValueError("Request doesn't suitable to update feedback")
+            
+            doc = self.fsclient.collection(chat_path).document(item.bcid)
+            doc.update(humps.camelize(_update))
+        except Exception as e:
+            raise ValueError(f"Failed to update user feedback: {e}")
+        
+        return _update

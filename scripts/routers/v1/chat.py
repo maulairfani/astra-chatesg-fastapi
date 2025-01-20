@@ -3,6 +3,8 @@ from fastapi.responses import StreamingResponse
 
 from scripts.services import ChatService, Retriever
 from scripts.schemas import ChatRequest, RetrieverRequest
+from scripts.models import ChatDocument
+from scripts.repositories import ChatRepository
 from scripts.utils import init_chain
 
 router = APIRouter()
@@ -29,3 +31,16 @@ async def retrieval(request: Request, response: Response, retriever_request: Ret
     contexts = service.get_relevant_contents(retriever_request)
     return contexts
 
+@router.post("/feedback")
+async def update_feedback(request: Request, response: Response, chat_doc: ChatDocument):
+    print(chat_doc)
+    chat_doc.uid = request.state.uid
+    repo = ChatRepository(request.app.fsclient)
+
+    response = repo.update_user_feedback(chat_doc)
+    return response
+    try:
+        response = repo.update_user_feedback(chat_doc)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update user feedback: {e}")

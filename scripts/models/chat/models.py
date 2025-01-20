@@ -25,7 +25,7 @@ class SessionDocument(BaseModel):
 class ChatDocument(BaseModel):
     version_no: int = 1
     src: str
-    uid: str
+    uid: str | None = None
     bsid: str | None = None  
     bcid: str | None = None  
     is_deleted: bool | None = False
@@ -44,3 +44,4 @@ class ChatDocument(BaseModel):
     metadata: dict | None = None 
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    thumbs_up: bool | None = None

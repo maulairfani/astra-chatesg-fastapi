@@ -64,21 +64,47 @@ class ChatService:
         user_messages = self._aggregate_user_messages(request.inputs)
 
         # Retrieve Context
-        retriever_request = RetrieverRequest(
-            query=user_messages,
-            filter={"company": request.company, "year": request.year},
-            mode=request.retriever,
-            top_k=request.top_k,
-            model=request.model,
-        )
-        print(retriever_request)
-        response.tools.append("Mengambil informasi relevan dari laporan keberlanjutan")
-        yield json.dumps(response.model_dump()) + "\n"
-        retriever_response = self.retriever.get_relevant_contents(retriever_request)
-        print(retriever_response)
+        if request.reference_contexts:
+            # For evaluation purpose only
+            retriever_response = RetrieverResponse(
+                metadata={
+                    'indicators': [request.reference_contexts]
+                }
+            )
 
-        # Aggregate contexts
-        contexts = self._aggregate_contexts(retriever_response.contents)
+            company_data = self.repo.get_data_by_company_name(request.company, request.year)
+            cid = company_data.get('cid')
+            retriever_response.metadata.update({
+                "url": company_data.get("url")
+            })
+
+            # get contents
+            page_ids = self.repo.get_page_ids_by_gri(cid, [request.reference_contexts])
+            retriever_response.contents = self.retriever._get_content_by_pids(page_ids)
+            
+            # aggregate contexts
+            contexts = self._aggregate_contexts(retriever_response.contents)
+
+        else:
+            retriever_request = RetrieverRequest(
+                query=user_messages,
+                filter={"company": request.company, "year": request.year},
+                mode=request.retriever,
+                top_k=request.top_k,
+                model=request.model,
+            )
+            response.tools.append("Mengambil informasi relevan dari laporan keberlanjutan")
+            yield json.dumps(response.model_dump()) + "\n"
+            retriever_response = self.retriever.get_relevant_contents(retriever_request)
+
+            # Aggregate contexts
+            contexts = self._aggregate_contexts(retriever_response.contents)
+
+        if len(contexts) == 0:
+            contexts = "Tidak ada informasi terkait dalam laporan keberlanjutan atau informasi tersebut tidak diungkap dalam laporan keberlanjutan"
+        
+        if len(chat_history) == 0:
+            chat_history = "Histori percakapan tidak tersedia"
 
         # Format prompt
         message = prompt_template.format(
@@ -141,8 +167,8 @@ class ChatService:
 
         # Save session and chat documents
         title = None
-        # if not request.bsid:
-        #     title = self._create_title(request.inputs)
+        if not request.bsid and request.src == "app":
+            title = self._create_title(request.inputs)
         
         self._create_or_update_session_doc(request, response, title)
         self._create_chat_doc(request, response)
@@ -159,8 +185,8 @@ class ChatService:
 
     def _aggregate_contexts(self, contents: List) -> str:
         context_list = [
-            f"Laporan Keberlanjutan {content.metadata.get('company')} tahun {content.metadata.get('year')}\n"
-            f"Halaman: {content.metadata.get('page')}\nKonten: {content.page_content.strip()}"
+            f"Laporan Keberlanjutan {content.metadata.get('company')} tahun {int(content.metadata.get('year'))}\n"
+            f"Halaman: {int(content.metadata.get('page'))}\nKonten: {content.page_content.strip()}"
             for content in contents
         ]
         return "\n\n".join(context_list)
@@ -235,7 +261,7 @@ class ChatService:
 
     def _clean_response(self, text: str) -> str:
         # Define the special tokens to remove
-        special_tokens = ['<end_of_turn>', '<eos>']
+        special_tokens = ['<end_of_turn>', '<eos>', '<\s>']
         for token in special_tokens:
             text = text.replace(token, '')
         return text
